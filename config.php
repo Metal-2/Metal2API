@@ -1,17 +1,5 @@
 <?php
 
-/* require_once 'vendor/autoload.php';
-
-require_once 'vendor/tecnickcom/tcpdf/tcpdf.php';
-
-require_once 'vendor/phpmailer/phpmailer/PHPMailerAutoload.php'; */
-
-require_once 'php/clases/Controladores.clase.php';
-
-require_once 'php/clases/Respuestas.clase.php';
-
-require_once 'php/utilidades/Caracteres.php';
-
 require 'vendor/autoload.php';
 
 session_start();
@@ -25,13 +13,18 @@ ini_set('display_startup_errors', TRUE);
 date_default_timezone_set('America/Bogota');
 
 
-
-define('EOL', (PHP_SAPI == 'cli') ? PHP_EOL : '<br />');
-
 define('DS', DIRECTORY_SEPARATOR);
 
-define('NOMBRE_APP', "Solicitud Peticion Verbal");
+define('NOMBRE_APP', "CyptoMetal");
+define('DB_HOST', "localhost");
+define('DB_NAME', "artprime_metal2");
+define('DB_USER', "root");
+define('DB_PASSWORD', "");
 
+define('USER_EMAIL', "jhoropertuz2@gmail.com");
+define('PASSWORD_EMAIL', "19971235");
+define('USER_NAME_EMAIL', "CryptoMetal");
+define('PATH_TEMPLATE_EMAIL', "php/utilidades/templateEmail/");
 
 
 spl_autoload_register('autoCargaModelos');
@@ -41,18 +34,20 @@ spl_autoload_register('autoCargaModelos');
 function autoCargaModelos($className) {
 
     $path = 'php/modelos/';
+    $file = $path . $className . '.php';
 
-    include $path . $className . '.php';
-
+    if (file_exists($file) == false) {
+        include "php/clases/" . $className . '.clase.php';
+    }else{
+        include ($file);
+    }
 }
-
-
-
-
 
 if (!defined('DIR_BASE')) {
 
     define('DIR_BASE', __DIR__ . DIRECTORY_SEPARATOR);
 
 }
+
+ 
 

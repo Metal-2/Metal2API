@@ -9,6 +9,9 @@ class Usuarios
 
     const SISTEMA="SISTEMA";
     const USUARIO = "USUARIO";
+    const ADMIN = "ADMIN";
+    const USER_NORMAL = "NORMAL";
+    const SUPER_ADMIN = "SUPER ADMIN";
 
     const DATOS_BASICOS = <<<EOD
   SELECT
@@ -28,43 +31,14 @@ EOD;
         usuarios.usuarioESTADO,
         usuarios.usuarioAVATAR,
         personas.*,
-        tipospersonas.*,
-        tiposidentificaciones.*,
-        nivelesescolares.*,
-        entidadespromotorassalud.*,
-        fondospensiones.*,
-        aseguradorasriesgoslaborales.*,
-        municipioNACIMIENTO.*,
-        deartamentoNACIMIENTO.* ,
-        municipioEXPEDICION.municipioID as municipioExpedicionID,
-        deartamentoEXPEDICION.departamentoID as departamentoExpedicionID,
-        paisesEXPEDICION.paisID as paiseExpedicionID
+        tiposidentificaciones.*
     FROM
         `usuarios`
     LEFT JOIN `personas` 
         ON usuarios.personaID = personas.personaID
-    LEFT JOIN `tipospersonas` 
-        ON personas.tipoPersonaID = tipospersonas.tipoPersonaID
     LEFT JOIN `tiposidentificaciones` 
         ON personas.tipoIdentificacionID = tiposidentificaciones.tipoIdentificacionID
-    LEFT JOIN `nivelesescolares` 
-        ON personas.nivelEscolarID = nivelesescolares.nivelEscolarID
-    LEFT JOIN `entidadespromotorassalud` 
-        ON personas.epsID = entidadespromotorassalud.epsID
-    LEFT JOIN `fondospensiones` 
-        ON personas.fondoPensionID = fondospensiones.fondoPensionID
-    LEFT JOIN `aseguradorasriesgoslaborales` 
-        ON personas.arlID = aseguradorasriesgoslaborales.arlID
-    LEFT JOIN `municipios` as municipioNACIMIENTO
-        ON personas.personaMUNICIPIONACIMIENTO = municipioNACIMIENTO.municipioID
-    LEFT JOIN `departamentos` as deartamentoNACIMIENTO
-        ON municipioNACIMIENTO.departamentoID = deartamentoNACIMIENTO.departamentoID
-    LEFT JOIN `municipios` as municipioEXPEDICION
-        ON personas.personaMUNICIPIOEXPEDICION = municipioEXPEDICION.municipioID
-    LEFT JOIN `departamentos` as deartamentoEXPEDICION
-        ON municipioEXPEDICION.departamentoID = deartamentoEXPEDICION.departamentoID
-    LEFT JOIN `paises` as paisesEXPEDICION
-        ON deartamentoEXPEDICION.paisID = paisesEXPEDICION.paisID
+
 EOD;
 
     public static function validarUsuario($usuarioNombre, $usuarioClave)
@@ -95,15 +69,16 @@ EOD;
         return Conexion::insertFila($sql, [$token,$usuarioID,$info,$tipo,$actividadUsuarioPROVIDERAUTH,$actividadUsuarioPROVIDERAUTHDATA]);
     }
     
-    public static function cantidadTotal()
+    public static function cantidadTotal($usuarioTIPO)
     {
         $sql = <<<EOD
         SELECT
         	COUNT(*) as cantidadTotal
         FROM
-            `usuarios` 
+            `usuarios`  
+        WHERE usuarioTIPO = ?
 EOD;
-        return Conexion::selectUnaFila($sql);
+        return Conexion::selectUnaFila($sql, [$usuarioTIPO]);
     }
     
     public static function dato($usuarioID)
@@ -136,20 +111,20 @@ EOD;
     }
 
 
-    public static function porRango($inicioBusqueda, $cantidad)
+    public static function porRango($inicioBusqueda, $cantidad, $usuarioTIPO)
     {
-        $sql = self::DATOS_COMPLETOS;
+        $sql = self::DATOS_COMPLETOS." WHERE usuarios.usuarioTIPO = ?";
         $sql .= " LIMIT $inicioBusqueda,$cantidad ";
 
-        return Conexion::selectVariasFilas($sql);
+        return Conexion::selectVariasFilas($sql, [$usuarioTIPO]);
     }
 
-    public static function porFiltroYRango($busqueda, $inicioBusqueda, $cantidad)
+    public static function porFiltroYRango($busqueda, $inicioBusqueda, $cantidad, $usuarioTIPO)
     {
         $sql = self::DATOS_COMPLETOS;
-        $sql .= " WHERE usuarios.usuarioNOMBRE LIKE '%$busqueda%' OR personas.personaRAZONSOCIAL LIKE '%$busqueda%'  LIMIT $inicioBusqueda,$cantidad ";
+        $sql .= " WHERE usuarios.usuarioTIPO = ? AND usuarios.usuarioNOMBRE LIKE '%$busqueda%' OR personas.personaRAZONSOCIAL LIKE '%$busqueda%'  LIMIT $inicioBusqueda,$cantidad ";
 
-        return Conexion::selectVariasFilas($sql);
+        return Conexion::selectVariasFilas($sql, [$usuarioTIPO]);
     }
 
     public static function buscarPorNombre($usuarioNOMBRE)
