@@ -23,7 +23,7 @@ class Email
         // 0 = off (producción)
         // 1 = client messages
         // 2 = client and server messages
-        self::$mail->SMTPDebug  = 2;
+        self::$mail->SMTPDebug  = 0;
         //Ahora definimos gmail como servidor que aloja nuestro SMTP
         self::$mail->Host       = 'smtp.gmail.com';
         //El puerto será el 587 ya que usamos encriptación TLS
@@ -78,11 +78,13 @@ class Email
             //Y por si nos bloquean el contenido HTML (algunos correos lo hacen por seguridad) una versión alternativa en texto plano (también será válida para lectores de pantalla)
             //self::$mail->AltBody = 'This is a plain-text message body';
             //Enviamos el correo
-            if (!self::$mail->Send()) {
-                echo "Error: " . self::$mail->ErrorInfo;
-            } else {
-                echo "Enviado!";
-            }
+            if (self::$mail->Send()) {
+                return true;
+                
+            } 
+            
+            echo "Error: " . self::$mail->ErrorInfo;
+            
         } catch (Exception $e) {
             echo "Message could not be sent. Mailer Error: " . self::$mail->ErrorInfo;
         }

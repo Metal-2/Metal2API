@@ -11,25 +11,21 @@ EOD;
     }
 
 
-    public static function guardarBasico($tipoPersonaID,$tipoIdentificacionID,$personaIDENTIFICACION,$personaPRIMERNOMBRE=NULL,$personaSEGUNDONOMBRE=NULL,$personaNOMBRES=NULL,$personaPRIMERAPELLIDO=NULL,$personaSEGUINDOAPELLIDO=NULL,$personaAPELLIDOS=NULL,$personaRAZONSOCIAL=NULL,$personaCORREO=NULL){
+    public static function guardarBasico(
+        $email,
+        $phone,
+        $country
+    ){
         $sql=<<<EOD
             INSERT INTO `personas` (
-                tipoPersonaID, 
-                tipoIdentificacionID, 
-                personaIDENTIFICACION,
-                personaPRIMERNOMBRE,
-                personaSEGUNDONOMBRE,
-                personaNOMBRES,
-                personaPRIMERAPELLIDO,
-                personaSEGUINDOAPELLIDO,
-                personaAPELLIDOS,
-                personaRAZONSOCIAL,
-                personaCORREO
+                personaCORREO,
+                personaTELEFONO, 
+                personaPAIS
                 )
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?)
 EOD;
 
-        return Conexion::insertFila($sql,[$tipoPersonaID,$tipoIdentificacionID,$personaIDENTIFICACION,$personaPRIMERNOMBRE,$personaSEGUNDONOMBRE,$personaNOMBRES,$personaPRIMERAPELLIDO,$personaSEGUINDOAPELLIDO,$personaAPELLIDOS,$personaRAZONSOCIAL,$personaCORREO]);
+        return Conexion::insertFila($sql,[$email,$phone,$country]);
     }
 
     public static function guardar($tipoPersonaID,$tipoIdentificacionID,$personaIDENTIFICACION,$personaPRIMERNOMBRE=NULL,$personaSEGUNDONOMBRE=NULL,$personaNOMBRES=NULL,$personaPRIMERAPELLIDO=NULL,$personaSEGUINDOAPELLIDO=NULL,$personaAPELLIDOS=NULL,$personaRAZONSOCIAL=NULL,$personaCORREO=NULL,$personaCELULAR=NULL,$nivelEscolarID=NULL,$usuarioUSR=NULL,$personaFCHNACIMIENTO=NULL,$personaDIRECCION=NULL,$fondoPensionID=NULL,$epsID=NULL,$arlID=NULL,$personaNUMEROHIJOS=NULL,$personaMUNICIPIONACIMIENTO=NULL,$personaGENERO=NULL,$personaESTADOCIVIL=NULL,$personaRUT=NULL,$personaMUNICIPIOEXPEDICION=NULL,$personaEDAD=NULL){

@@ -22,9 +22,10 @@ define('DB_USER', "root");
 define('DB_PASSWORD', "");
 
 define('USER_EMAIL', "jhoropertuz2@gmail.com");
-define('PASSWORD_EMAIL', "19971235");
+define('PASSWORD_EMAIL', "opkpigiacmonljkf");
 define('USER_NAME_EMAIL', "CryptoMetal");
 define('PATH_TEMPLATE_EMAIL', "php/utilidades/templateEmail/");
+define('URL_APP', "http://localhost:4200/#/");
 
 
 spl_autoload_register('autoCargaModelos');

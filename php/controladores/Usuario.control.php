@@ -1,17 +1,54 @@
 <?php
+
 use PhpOffice\PhpSpreadsheet\IOFactory;
+
 class UsuarioControlador extends Controladores
 {
 
+    function activarCuenta(){
+        Usuarios::activarCuenta($this->usuarioID);
+    }
+
+    function registerApp()
+    {
+        $data = $this->data;
+        $info = isset($this->info) ? $this->info : NULL;
+        $providerAuth = isset($this->providerAuth) ? $this->providerAuth : ProviderAuth::LOCAL;
+        $providerAuthData = isset($this->providerAuthData) ? $this->providerAuthData : NULL;
+
+        $email = $data->email;
+        $password = $data->password;
+        $phone = $data->phone;
+        $country = $data->country;
+
+        
+        $usuario = Usuarios::register($email, $password, $phone, $country);
+
+        if (!$usuario) {
+            echo Respuestas::info("We have problems registering it, it may be that the user is registered.");
+        }else{
+            Email::send(
+                [["email" => $email, "name" => $email]],
+                "Please verify your email address.",
+                NULL,
+                "VALIDATE_EMAIL",
+                ["URL" => URL_APP."validateemail/".$usuario->usuarioID]
+            );
+            /* Por favor, verifique su dirección de correo electrónico o ingrese sesión con Google para activar su cuenta  */
+            echo Respuestas::exito("Please verify your email address or sign in with Google to activate your account.");
+        }
+        
+        //$this->inicioSession($usuario,$providerAuth,$info,false,$providerAuthData);
+    }
 
     function validarUsuarioAdmin()
     {
         $usuarioNombre = $this->usuarioNombre;
         $usuarioClave = $this->usuarioClave;
         $info = isset($this->info) ? $this->info : NULL;
-        $providerAuth = isset($this->providerAuth) ? $this->providerAuth : "LOCAL";
+        $providerAuth = isset($this->providerAuth) ? $this->providerAuth : ProviderAuth::LOCAL;
         $providerAuthData = isset($this->providerAuthData) ? $this->providerAuthData : NULL;
-    
+
         $this->validarUsuario($usuarioNombre, $usuarioClave, $info, $providerAuth, $providerAuthData, true);
     }
 
@@ -20,46 +57,40 @@ class UsuarioControlador extends Controladores
         $usuarioNombre = $this->usuarioNombre;
         $usuarioClave = $this->usuarioClave;
         $info = isset($this->info) ? $this->info : NULL;
-        $providerAuth = isset($this->providerAuth) ? $this->providerAuth : "LOCAL";
+        $providerAuth = isset($this->providerAuth) ? $this->providerAuth : ProviderAuth::LOCAL;
         $providerAuthData = isset($this->providerAuthData) ? $this->providerAuthData : NULL;
-    
+
         $this->validarUsuario($usuarioNombre, $usuarioClave, $info, $providerAuth, $providerAuthData);
     }
 
-    function validarUsuario($usuarioNombre, $usuarioClave, $info, $providerAuth, $providerAuthData, $validateUsuarioADMIN = false, $validateProviderAuthData = true)
+    function validarUsuario($usuarioNombre, $usuarioClave, $info, $providerAuth, $providerAuthData, $validateUsuarioADMIN = false)
     {
-        
-        $mensaje = "";
-        if ($providerAuth != "LOCAL") {
+        if ($providerAuth != ProviderAuth::LOCAL) {
 
             $usuario = Usuarios::hasUsuarioNombre($usuarioNombre);
 
-            if (!$usuario && !$validateProviderAuthData) {
-                $personaID = Personas::guardarBasico(
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    $providerAuthData->name,
-                    $providerAuthData->email
-                );
-                $usuario =  Usuarios::guardarPorSistema($usuarioNombre, Usuarios::SISTEMA, $personaID);
-            } else {
-                $mensaje .= " o el usuario no tiene permitido ingresar";
+            if($usuario){
+                Usuarios::actualizarAvatar($usuarioNombre, $providerAuthData->photoUrl);
+                Usuarios::activarCuenta($usuario->usuarioID);
             }
-            Usuarios::actualizarAvatar($usuarioNombre, $providerAuthData->photoUrl);
+
         } else {
             $usuario = Usuarios::validarUsuario($usuarioNombre, $usuarioClave);
+
+            if ($usuario && ($usuario->usuarioVALIDADO != "VALIDADO")) {
+                echo Respuestas::info("Please verify your email address or sign in with Google to activate your account.");
+                return;
+            }
         }
+       
+        $this->inicioSession($usuario,$providerAuth,$info,$validateUsuarioADMIN,$providerAuthData);
+    }
+
+    function inicioSession($usuario,$providerAuth,$info,$validateUsuarioADMIN=false,$providerAuthData=NULL){
 
         if ($usuario) {
-            $isAdminOrSuperAdmin = (($usuario->usuarioTIPO == Usuarios::ADMIN)?true:false)?true: (($usuario->usuarioTIPO == Usuarios::SUPER_ADMIN)?true:false);
-    
+            $isAdminOrSuperAdmin = (($usuario->usuarioTIPO == Usuarios::ADMIN) ? true : false) ? true : (($usuario->usuarioTIPO == Usuarios::SUPER_ADMIN) ? true : false);
+
             if ($validateUsuarioADMIN && !$isAdminOrSuperAdmin) {
                 echo Respuestas::info("El usuario no es administrador.");
                 return;
@@ -86,7 +117,7 @@ class UsuarioControlador extends Controladores
                 echo Respuestas::info("El usuario se encuenta desactivo.");
             }
         } else {
-            echo Respuestas::info("Los datos ingresados no son correctos" . $mensaje . ".");
+            echo Respuestas::info("Los datos ingresados no son correctos.");
         }
     }
 
@@ -229,27 +260,27 @@ class UsuarioControlador extends Controladores
 
     function getAdminAppMenu()
     {
-        $usuarioID=$this->usuarioID;
-        $usuario=Usuarios::dato($usuarioID);
-        if($usuario){
-            $items=[];
-            $menuComponentes=ControlOperaciones::todosComponentes();
+        $usuarioID = $this->usuarioID;
+        $usuario = Usuarios::dato($usuarioID);
+        if ($usuario) {
+            $items = [];
+            $menuComponentes = ControlOperaciones::todosComponentes();
 
-            $items= ControlOperaciones::menuDelUsuario($usuarioID);
-           
-            foreach($menuComponentes as $componente){
-                $componente->items=[];
-                foreach($items as $item){
-                    if($item->controlComponenteID==$componente->controlComponenteID){
-                        array_push($componente->items,$item);
-                        $indice = array_search($item,$items,false);
-                        array_splice($items,$indice,1);
+            $items = ControlOperaciones::menuDelUsuario($usuarioID);
+
+            foreach ($menuComponentes as $componente) {
+                $componente->items = [];
+                foreach ($items as $item) {
+                    if ($item->controlComponenteID == $componente->controlComponenteID) {
+                        array_push($componente->items, $item);
+                        $indice = array_search($item, $items, false);
+                        array_splice($items, $indice, 1);
                         /*unset($items[$index]);*/
                     }
                 }
             }
-            echo Respuestas::exito("item menus",["Components"=>$menuComponentes,"Items"=>$items]);
-        }else{
+            echo Respuestas::exito("item menus", ["Components" => $menuComponentes, "Items" => $items]);
+        } else {
             echo Respuestas::error("Usuario no existe.");
         }
     }
@@ -469,7 +500,7 @@ class UsuarioControlador extends Controladores
     function enviarCorreo()
     {
         Email::send(
-            [["email"=>"jhoropertuz@gmail.com", "name"=>"atan romero"]],
+            [["email" => "jhoropertuz@gmail.com", "name" => "atan romero"]],
             "primera pruebaaaa",
             NULL,
             "VALIDATE_EMAIL",

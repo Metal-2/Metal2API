@@ -7,7 +7,7 @@ class Usuarios
     const INGRESO = "INGRESO";
     const CERRAR_SESION = "CERRAR SESION";
 
-    const SISTEMA="SISTEMA";
+    const SISTEMA = "SISTEMA";
     const USUARIO = "USUARIO";
     const ADMIN = "ADMIN";
     const USER_NORMAL = "NORMAL";
@@ -30,14 +30,13 @@ EOD;
         usuarios.usuarioTIPO,
         usuarios.usuarioESTADO,
         usuarios.usuarioAVATAR,
-        personas.*,
-        tiposidentificaciones.*
+        usuarios.usuarioTOKENREFERIDO,
+        usuarios.usuarioVALIDADO,
+        personas.*
     FROM
         `usuarios`
     LEFT JOIN `personas` 
         ON usuarios.personaID = personas.personaID
-    LEFT JOIN `tiposidentificaciones` 
-        ON personas.tipoIdentificacionID = tiposidentificaciones.tipoIdentificacionID
 
 EOD;
 
@@ -53,7 +52,7 @@ EOD;
         return Conexion::selectUnaFila($sql, [$usuarioNombre]);
     }
 
-    public static function guardarActividadUsuario($token,$usuarioID,$tipo,$info=NULL,$actividadUsuarioPROVIDERAUTH=NULL, $actividadUsuarioPROVIDERAUTHDATA=NULL)
+    public static function guardarActividadUsuario($token, $usuarioID, $tipo, $info = NULL, $actividadUsuarioPROVIDERAUTH = NULL, $actividadUsuarioPROVIDERAUTHDATA = NULL)
     {
         $sql = <<<EOD
         INSERT INTO  `actividadUsuario` (
@@ -66,9 +65,9 @@ EOD;
             )
         VALUES (?,?,?,?,?,?)
 EOD;
-        return Conexion::insertFila($sql, [$token,$usuarioID,$info,$tipo,$actividadUsuarioPROVIDERAUTH,$actividadUsuarioPROVIDERAUTHDATA]);
+        return Conexion::insertFila($sql, [$token, $usuarioID, $info, $tipo, $actividadUsuarioPROVIDERAUTH, $actividadUsuarioPROVIDERAUTHDATA]);
     }
-    
+
     public static function cantidadTotal($usuarioTIPO)
     {
         $sql = <<<EOD
@@ -80,7 +79,7 @@ EOD;
 EOD;
         return Conexion::selectUnaFila($sql, [$usuarioTIPO]);
     }
-    
+
     public static function dato($usuarioID)
     {
         $sql = <<<EOD
@@ -113,7 +112,7 @@ EOD;
 
     public static function porRango($inicioBusqueda, $cantidad, $usuarioTIPO)
     {
-        $sql = self::DATOS_COMPLETOS." WHERE usuarios.usuarioTIPO = ?";
+        $sql = self::DATOS_COMPLETOS . " WHERE usuarios.usuarioTIPO = ?";
         $sql .= " LIMIT $inicioBusqueda,$cantidad ";
 
         return Conexion::selectVariasFilas($sql, [$usuarioTIPO]);
@@ -140,25 +139,22 @@ EOD;
     }
 
 
-    public static function guardar($colaboradorID, $usuarioNOMBRE, $usuarioCLAVE, $usuarioUSR, $usuarioTIPO = "NORMAL", $usuarioESTADO = "ACTIVO")
+    public static function guardar($personaID, $email, $password)
     {
 
         $sql = <<<EOD
         INSERT INTO  `usuarios` (
             usuarioNOMBRE, 
             usuarioCLAVE,
-            colaboradorID, 
-            usuarioTIPO,
-            usuarioESTADO,
-            usuarioUSRCREO,
-            usuarioTOKEN
+            personaID,
+            usuarioTOKENREFERIDO
             )
-        VALUES (?,?,?,?,?,?,?)
+        VALUES (?,?,?,?)
 EOD;
-        return Conexion::insertFila($sql, [$usuarioNOMBRE, md5($usuarioCLAVE), $colaboradorID, $usuarioTIPO, $usuarioESTADO, $usuarioUSR, uniqid()]);
+        return Conexion::insertFila($sql, [$email, md5($password), $personaID, uniqid()]);
     }
 
-    public static function guardarPorSistema($usuarioNOMBRE,$usuarioCREADORPOR,$personaID, $usuarioTIPO = "NORMAL", $usuarioESTADO = "ACTIVO")
+    public static function guardarPorSistema($usuarioNOMBRE, $usuarioCREADORPOR, $personaID, $usuarioTIPO = "NORMAL", $usuarioESTADO = "ACTIVO")
     {
 
         $sql = <<<EOD
@@ -171,8 +167,8 @@ EOD;
             )
         VALUES (?,?,?,?,?)
 EOD;
-  
-        $usuario = Conexion::insertFila($sql, [$usuarioNOMBRE, $usuarioTIPO, $usuarioESTADO,$usuarioCREADORPOR, $personaID]);
+
+        $usuario = Conexion::insertFila($sql, [$usuarioNOMBRE, $usuarioTIPO, $usuarioESTADO, $usuarioCREADORPOR, $personaID]);
         if ($usuario) {
             return self::hasUsuarioNombre($usuarioNOMBRE);
         }
@@ -227,5 +223,39 @@ EOD;
             }
         }
         return false;
+    }
+
+    public static function register($email, $password, $phone, $country)
+    {
+        if (!self::buscarPorNombre($email)) {
+            $personaID = Personas::guardarBasico(
+                $email,
+                $phone,
+                $country
+            );
+
+            if ($personaID) {
+                $usuarioID = self::guardar(
+                    $personaID,
+                    $email,
+                    $password
+                );
+
+                if ($usuarioID) {
+                    return self::datosCompletos($usuarioID);
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+
+    public static function  activarCuenta($usuarioID){
+        $sql = <<<EOD
+        UPDATE `usuarios` SET
+        usuarioVALIDADO=?
+            WHERE usuarioID = ?
+    EOD;
+            return Conexion::actualizarFila($sql, ["VALIDADO", $usuarioID]);
     }
 }
